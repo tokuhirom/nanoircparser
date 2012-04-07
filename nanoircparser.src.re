@@ -66,7 +66,11 @@ public:
         * Note. fix HOST regexp to better one.
         */
 
-    start:
+#define NNMARK(x) do { \
+        std::string text(mark2, cursor-mark2); \
+        msg.x = text; \
+    } while(0)
+
         mark2 = cursor;
     /*!re2c
         ":" {
@@ -74,13 +78,20 @@ public:
             goto prefix;
         }
         COMMAND {
-            std::string text(mark2, cursor-mark2);
-            msg.command = text;
+            NNMARK(command);
             goto params_space;
         }
-        ANY_CHARACTER {
-            return return_error(src);
+        ANY_CHARACTER { return return_error(src); }
+        */
+
+    command_only:
+        mark2 = cursor;
+    /*!re2c
+        COMMAND {
+            NNMARK(command);
+            goto params_space;
         }
+        ANY_CHARACTER { return return_error(src); }
         */
 
     prefix:
@@ -88,23 +99,20 @@ public:
         mark2 = cursor;
     /*!re2c
         PREFIX {
-            std::string text(mark2, cursor-mark2);
-            msg.prefix = text;
+            NNMARK(prefix);
             goto prefix_space;
         }
-        ANY_CHARACTER {
-            return return_error(src);
-        }
+        ANY_CHARACTER { return return_error(src); }
         */
+
+#undef NNMARK
 
     prefix_space:
     /*!re2c
         SPACE {
-            goto start;
+            goto command_only;
         }
-        ANY_CHARACTER {
-            return return_error(src);
-        }
+        ANY_CHARACTER { return return_error(src); }
         */
 
     params_space:
@@ -112,9 +120,7 @@ public:
         SPACE {
             goto params;
         }
-        ANY_CHARACTER {
-            return return_error(src);
-        }
+        ANY_CHARACTER { return return_error(src); }
         */
 
     after_params_middle:
@@ -125,9 +131,7 @@ public:
         CRLF {
             goto success;
         }
-        ANY_CHARACTER {
-            return return_error(src);
-        }
+        ANY_CHARACTER { return return_error(src); }
         */
 
     params:
@@ -144,9 +148,7 @@ public:
             msg.params.push_back(text);
             goto after_params_middle;
         }
-        ANY_CHARACTER {
-            return return_error(src);
-        }
+        ANY_CHARACTER { return return_error(src); }
         */
 
     crlf:
